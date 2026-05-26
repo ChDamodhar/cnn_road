@@ -168,7 +168,7 @@ with col_left:
     if uploaded_file is not None:
         st.markdown("<h3>Preview Uploaded Road Image</h3>", unsafe_allow_html=True)
         image = Image.open(uploaded_file)
-        st.image(image, use_container_width=True, caption="Source Feed Image")
+        st.image(image, width="stretch", caption="Source Feed Image")
 
         temp_img_path = f"temp_{uploaded_file.name}"
         image.save(temp_img_path)
@@ -184,12 +184,19 @@ if uploaded_file is not None:
             try:
                 worker_script = "predict_worker.py"
 
+                # Run the prediction script and safely capture internal crash logs
                 result = subprocess.run(
                     ["python3", worker_script, temp_img_path],
                     capture_output=True,
                     text=True,
-                    check=True,
+                    check=False  
                 )
+
+                # Explicit error catcher to display background script traceback details
+                if result.returncode != 0:
+                    st.error("❌ **CNN Prediction Pipeline Error Details:**")
+                    st.code(result.stderr, language="bash")
+                    st.stop()
 
                 raw_predictions = json.loads(result.stdout.strip())
                 class_labels = ["pothole", "crack", "manhole"]
