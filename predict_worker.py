@@ -14,7 +14,7 @@ def run_isolated_inference(img_path):
     # Automatically pull down the model binary asset if running on the cloud server
     if not os.path.exists(model_file):
         # REPLACE THIS URL with your exact GitHub Release Asset download link
-        url = "https://github.com/ChDamodhar/cnn_road/releases/download/untagged-5ee5d0cc4c1fa7077dd4/road_damage_cnn_model.h5"
+        url = "https://github.com/ChDamodhar/cnn_road/releases/download/YOUR_NEW_TAG/road_damage_cnn_model.h5"
         try:
             sys.stderr.write("Downloading CNN model weights from release assets...\n")
             urllib.request.urlretrieve(url, model_file)
