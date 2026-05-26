@@ -1,6 +1,7 @@
 import os
 import subprocess
 import json
+import sys
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -8,13 +9,12 @@ import plotly.express as px
 from PIL import Image
 
 # -------------------------------------------------------------------------
-# PAGE SETUP & ULTIMATE HIGH-CONTRAST CSS
+# PAGE SETUP & HIGH-CONTRAST DARK THEME CSS
 # -------------------------------------------------------------------------
 st.set_page_config(
     page_title="Road Damage Detection", page_icon="🚧", layout="wide"
 )
 
-# Complete theme override with highly explicit selectors and high-contrast colors
 st.markdown(
     """
     <style>
@@ -23,14 +23,14 @@ st.markdown(
         background-color: #0B0F17 !important;
     }
     
-    /* Force text elements everywhere to have excellent contrast */
+    /* Text element visibility adjustments */
     .stMarkdown p, .stMarkdown li, p, li {
         color: #E2E8F0 !important;
         font-size: 16px !important;
         line-height: 1.6 !important;
     }
     
-    /* Make headers stand out with dedicated colors */
+    /* Header Typography styling */
     h1 {
         color: #FFFFFF !important;
         font-weight: 800 !important;
@@ -43,7 +43,7 @@ st.markdown(
         margin-top: 20px !important;
     }
     
-    /* About the Project Card Styling */
+    /* Context block layout */
     .about-box {
         background-color: #161D2A !important;
         padding: 25px;
@@ -61,7 +61,7 @@ st.markdown(
         margin-bottom: 8px !important;
     }
     
-    /* Metrics Result Cards styling */
+    /* Statistical Summary UI panels */
     .metric-card {
         background-color: #161D2A !important;
         padding: 22px;
@@ -71,7 +71,7 @@ st.markdown(
         box-shadow: 0px 6px 14px rgba(0,0,0,0.4);
     }
     .metric-title {
-        color: #94A3B8 !important; /* Highly readable silver-blue label */
+        color: #94A3B8 !important;
         font-size: 14px !important;
         text-transform: uppercase !important;
         letter-spacing: 1.5px !important;
@@ -80,7 +80,7 @@ st.markdown(
         margin-bottom: 10px;
     }
     
-    /* Operational Recommendation Banners */
+    /* Operations/Urgency contextual banners */
     .rec-box-high {
         background-color: #3B1414 !important;
         padding: 22px;
@@ -111,7 +111,7 @@ st.markdown(
 )
 
 # -------------------------------------------------------------------------
-# SECTION 1 — Header
+# SECTION 1 — Header Layout
 # -------------------------------------------------------------------------
 st.title("AI-Based Road Damage Detection System")
 st.markdown(
@@ -121,7 +121,7 @@ st.markdown(
 st.markdown("<hr style='border: 1px solid #243247;'/>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------------------
-# SECTION 2 — About the Project
+# SECTION 2 — Technical Context
 # -------------------------------------------------------------------------
 with st.expander("ℹ️ About the Project & Industry Context", expanded=True):
     st.markdown(
@@ -148,11 +148,11 @@ with st.expander("ℹ️ About the Project & Industry Context", expanded=True):
         unsafe_allow_html=True,
     )
 
-# Establish layout columns for the core task workflows
+# Establish side-by-side dashboard partition columns
 col_left, col_right = st.columns([1, 1.2], gap="large")
 
 # -------------------------------------------------------------------------
-# SECTION 3 — Upload Area
+# SECTION 3 — Image Ingestion Interface
 # -------------------------------------------------------------------------
 with col_left:
     st.markdown("<h2>📸 Data Ingestion</h2>", unsafe_allow_html=True)
@@ -163,18 +163,18 @@ with col_left:
     )
 
     # -------------------------------------------------------------------------
-    # SECTION 4 — Uploaded Image Preview
+    # SECTION 4 — File Rendering
     # -------------------------------------------------------------------------
     if uploaded_file is not None:
         st.markdown("<h3>Preview Uploaded Road Image</h3>", unsafe_allow_html=True)
         image = Image.open(uploaded_file)
-        st.image(image, width="stretch", caption="Source Feed Image")
+        st.image(image, use_container_width=True, caption="Source Feed Image")
 
         temp_img_path = f"temp_{uploaded_file.name}"
         image.save(temp_img_path)
 
 # -------------------------------------------------------------------------
-# RUN ISOLATED INFERENCE TRIGGER & POST-PROCESSING
+# MODEL PIPELINE SUBPROCESS RUNNER
 # -------------------------------------------------------------------------
 if uploaded_file is not None:
     with col_right:
@@ -183,16 +183,19 @@ if uploaded_file is not None:
         with st.spinner("Processing image matrix through CNN stack..."):
             try:
                 worker_script = "predict_worker.py"
+                
+                # Fetch absolute path of the environment's python runner
+                active_python_env = sys.executable
 
-                # Run the prediction script and safely capture internal crash logs
+                # Execute pipeline using explicitly isolated environment context
                 result = subprocess.run(
-                    ["python3", worker_script, temp_img_path],
+                    [active_python_env, worker_script, temp_img_path],
                     capture_output=True,
                     text=True,
                     check=False  
                 )
 
-                # Explicit error catcher to display background script traceback details
+                # Route internal exceptions directly to screen codeblocks
                 if result.returncode != 0:
                     st.error("❌ **CNN Prediction Pipeline Error Details:**")
                     st.code(result.stderr, language="bash")
@@ -205,7 +208,7 @@ if uploaded_file is not None:
                 predicted_class = class_labels[top_idx].title()
                 confidence = raw_predictions[top_idx] * 100
 
-                # Determine severity dynamically
+                # Structural vulnerability logic maps
                 if predicted_class == "Pothole":
                     severity = "High" if confidence > 75 else "Medium"
                 elif predicted_class == "Crack":
@@ -214,7 +217,7 @@ if uploaded_file is not None:
                     severity = "Low"
 
                 # -------------------------------------------------------------
-                # SECTION 5 — Prediction Area
+                # SECTION 5 — Inference Metrics Visualization
                 # -------------------------------------------------------------
                 st.markdown("<h3>Inference Metrics Summary</h3>", unsafe_allow_html=True)
                 m_col1, m_col2, m_col3 = st.columns(3)
@@ -248,7 +251,7 @@ if uploaded_file is not None:
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # -------------------------------------------------------------
-                # SECTION 6 — Visualization Area
+                # SECTION 6 — Plotly Class Probability Bar Chart
                 # -------------------------------------------------------------
                 st.markdown("<h3>Class Confidence Graph</h3>", unsafe_allow_html=True)
                 df_chart = pd.DataFrame(
@@ -288,7 +291,7 @@ if uploaded_file is not None:
                 st.plotly_chart(fig, use_container_width=True)
 
                 # -------------------------------------------------------------
-                # SECTION 7 — Recommendations
+                # SECTION 7 — Civil Engineering Advisory Warnings
                 # -------------------------------------------------------------
                 st.markdown("<h3>Operational Recommendations</h3>", unsafe_allow_html=True)
                 if severity == "High":
