@@ -1,0 +1,3 @@
+road_damage_cnn_model.h5
+*.h5
+*.keras
